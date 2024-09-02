@@ -18,6 +18,8 @@
     let draggingEmoji = null;
     let dragOffset = { x: 0, y: 0 };
     let isDragging = false;
+    let initialTouchPos = null;
+
     let isEating = false;
     let clickThreshold = 5; // Movement threshold to differentiate between click and drag
     let growthRate = 6;
@@ -201,53 +203,57 @@
 
     // Handle mouse interaction
     let initialMousePos = null;
+    const getTouchPos = (e) => {
+      const touch = e.touches[0];
+      return { x: touch.clientX, y: touch.clientY };
+    };
 
-    a.addEventListener('mousedown', (e) => {
-      const mousePos = Vec2(e.clientX, e.clientY);
-      initialMousePos = mousePos;
+    // Mouse and touch event handlers
+    const onStart = (e) => {
+      e.preventDefault(); // Prevent default behavior like scrolling
+      const pos = e.type === 'mousedown' ? { x: e.clientX, y: e.clientY } : getTouchPos(e);
+      initialTouchPos = pos;
 
       objects.forEach((obj) => {
         if (obj.isPoop) return; // Skip poop emojis
 
-        // Check if mouse is over the emoji
-        const dist = length(subtract(mousePos, obj.C));
+        const dist = length(subtract(pos, obj.C));
         if (dist < obj.R) {
-          draggingEmoji = obj; // Set the emoji to be dragged
+          draggingEmoji = obj;
           obj.isDragging = true;
-          obj.V = Vec2(0, 0); // Stop movement during dragging
-          dragOffset = subtract(mousePos, obj.C); // Calculate offset from click position to the center
-          isDragging = false; // Initially assume it's not a drag
+          obj.V = Vec2(0, 0);
+          dragOffset = subtract(pos, obj.C);
         }
       });
-    });
+    };
 
-    a.addEventListener('mousemove', (e) => {
+    const onMove = (e) => {
+      e.preventDefault(); // Prevent default behavior like scrolling
       if (draggingEmoji && !draggingEmoji.isPoop) {
-        const mousePos = Vec2(e.clientX, e.clientY);
-        const dragDistance = length(subtract(mousePos, initialMousePos));
-        if (dragDistance > clickThreshold) {
-          isDragging = true; // Consider it a drag if the movement exceeds the threshold
-          draggingEmoji.C = subtract(mousePos, dragOffset); // Update emoji position based on mouse movement
-        }
+        const pos = e.type === 'mousemove' ? { x: e.clientX, y: e.clientY } : getTouchPos(e);
+        draggingEmoji.C = subtract(pos, dragOffset);
       }
-    });
+    };
 
-    a.addEventListener('mouseup', (e) => {
+    const onEnd = (e) => {
+      e.preventDefault();
       if (draggingEmoji) {
-        // if (!isDragging && draggingEmoji.clicks < 13) {
-        //   // draggingEmoji.R += 5; // Grow emoji if it wasn't dragged
-        //   const getClicks = Math.floor(Math.random() * 7) + 1;
-        //   draggingEmoji.clicks += getClicks;
-        //   draggingEmoji.R += getClicks * growthRate;
-        //   grow(draggingEmoji);
-        //   //draggingEmoji.clicks++; // Increment click count
-        //   // If the emoji has been clicked 13 times, transform it into poop
-        // }
         draggingEmoji.isDragging = false;
-        draggingEmoji = null; // Release the emoji
-        isDragging = false; // Reset dragging state
+        draggingEmoji = null;
+        isDragging = false;
       }
-    });
+    };
+
+    // Mouse events
+    a.addEventListener('mousedown', onStart);
+    a.addEventListener('mousemove', onMove);
+    a.addEventListener('mouseup', onEnd);
+
+    // Touch events
+    a.addEventListener('touchstart', onStart);
+    a.addEventListener('touchmove', onMove);
+    a.addEventListener('touchend', onEnd);
+
     const grow = (b) => {
       if (b.clicks > 13) b.clicks = 13
       if (b.clicks >= 13 && !b.isPoop) {
