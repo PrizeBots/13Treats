@@ -10,8 +10,8 @@
     const yum2 = document.getElementById('yum2');
     const ew1 = document.getElementById('ew1');
     const ew2 = document.getElementById('ew2');
-    a.width = innerWidth * .92;
-    a.height = innerHeight * .92;
+    a.width = innerWidth * .98;
+    a.height = innerHeight * .97;
     const maxPoints = 1000;
     const minPoints = -1000;
     let objects = [];
@@ -48,17 +48,13 @@
       const barMaxWidth = a.width / 2; // Half the canvas width for the full bar
       const barX = (a.width - barMaxWidth) / 2;
       const barY = 10;
-
       // Calculate the middle of the bar, which represents 0 points
       const middleX = barX + barMaxWidth / 2;
-
       // Calculate the current width of the bar based on points
       const barWidth = Math.min(Math.abs(points) / maxPoints * (barMaxWidth / 2), barMaxWidth / 2);
-
       // Draw the background of the bar
       c.fillStyle = '#a0a0a0'; // Background color
       c.fillRect(barX, barY, barMaxWidth, barHeight);
-
       // Draw the bar itself based on points
       if (points >= 0) {
         c.fillStyle = '#00ff00'; // Green for positive points
@@ -67,17 +63,14 @@
         c.fillStyle = '#ff0000'; // Red for negative points
         c.fillRect(middleX - barWidth, barY, barWidth, barHeight);
       }
-
       // Draw the vertical black line in the middle (representing 0 points)
       c.strokeStyle = '#000000';
       c.beginPath();
       c.moveTo(middleX, barY);
       c.lineTo(middleX, barY + barHeight);
       c.stroke();
-
       // Draw the outline of the bar
       c.strokeRect(barX, barY, barMaxWidth, barHeight);
-
       // Check for game over
       if (points <= minPoints) {
         gameOver();
@@ -93,24 +86,16 @@
     };
 
     const drawMonster = () => {
-      // Draw the face (emoji)
-      c.font = "300px Arial";
+      const monsterSize = window.innerWidth * 0.25;
+      // Set the font size dynamically for the emoji face
+      c.font = `${monsterSize}px Arial`;
       c.textAlign = "center";
-      c.fillText(monster.face, monster.pos.x + monster.mouthWidth / 2, monster.pos.y - 20);
-
-      // Draw the beam (mouth)
-      c.fillStyle = '#ff0000';
-      c.fillRect(monster.pos.x, monster.pos.y, monster.mouthWidth, monster.mouthHeight);
-
-      // Draw left and right walls of the mouth
-      c.fillStyle = '#000';
-      c.fillRect(monster.pos.x - monster.wallWidth, monster.pos.y - monster.wallHeight / 2, monster.wallWidth, monster.wallHeight);
-      c.fillRect(monster.pos.x + monster.mouthWidth, monster.pos.y - monster.wallHeight / 2, monster.wallWidth, monster.wallHeight);
+      c.fillText(monster.face, monster.pos.x + monster.mouthWidth / 2, monster.pos.y + 60);
     };
     // Monster object with its beam and walls (mouth)
     let monster = {
-      face: "😀", // Default emoji face
-      currentFace: "😀",
+      face: "😐", // Default emoji face
+      currentFace: "😐",
       pos: Vec2((a.width - barWidth) / 2, a.height / 2 - barHeight / 2),
       speed: barSpeed,
       direction: 1,
@@ -119,30 +104,35 @@
       wallWidth: wallWidth,
       wallHeight: wallHeight
     };
+    //Monster loop
     const updateMonster = () => {
       monster.pos.x += monster.speed * monster.direction; // Move the monster
       if (monster.pos.x <= 0 || monster.pos.x + monster.mouthWidth >= a.width) {
         monster.direction *= -1; // Reverse direction if at edge
       }
-      if (points > 0 && points < 100) monster.currentFace =  "😀";
-      else if( points >= 100 && points < 500) monster.currentFace = "😃";
-      else if( points > 500)monster.currentFace = "😍";
+      //Adjust monster based on his happiness points
+      if (points > 20 && points < 100) monster.currentFace = "🙂";
+      else if (points >= 100 && points < 200) monster.currentFace = "😀";
+      else if (points >= 200 && points < 300) monster.currentFace = "😃";
+      else if (points >= 300 && points < 400) monster.currentFace = "😋";
+      else if (points >= 400 && points < 500) monster.currentFace = "🥰";
+      else if (points >= 500 && points < 600) monster.currentFace = "😚";
+      else if (points >= 600 && points < 700) monster.currentFace = "🤩";
+      else if (points > 700) monster.currentFace = "😍";
+      //Angry
       else if (points < 0 && points > -25) monster.currentFace = "😕";
       else if (points < -25 && points > -50) monster.currentFace = "🙁";
       else if (points < -50 && points > -75) monster.currentFace = "😟";
       else if (points < -75 && points > -100) monster.currentFace = "😢";
       else if (points < -125 && points > -150) monster.currentFace = "😧";
-      else if (points < -175 && points > -200) monster.currentFace = "😭";
+      else if (points < -175 && points > -200) monster.currentFace = "😣";
       else if (points < -225 && points > -250) monster.currentFace = "😠";
       else if (points < -250 && points > -350) monster.currentFace = "😡";
       else if (points <= -350 && points > -450) monster.currentFace = "🤬";
       else if (points <= -450) monster.currentFace = "😵";
     };
-
-    // Emoji generation with physics
-    // const createEmoji = (C, R = Math.random() * a.width / 80 + 9, M = 1 / R) => {
-    const fruitEmojis = ["🍎", "🍊", "🍌", "🍇", "🍉", "🍍", "🍓", "🍑", "🍒", "🥭"]; // Array of fruit emojis
-
+    //Create fruits
+    const fruitEmojis = ["🍎", "🍊", "🍌", "🍇", "🍉", "🍍", "🍓", "🍑", "🍒", "🥭", "🍐", "🍏", "🍋", "🍈", "🍅", "🍆", "🥑", "🫐"];
     const createEmoji = (C, R = 20, M = 1 / R) => {
       objects.push({
         C,
@@ -153,70 +143,56 @@
         R, // Radius
         //  Z: String.fromCodePoint(Math.random() * 0x45 | 0 + 0x1F600), // Random Emoji
         Z: fruitEmojis[Math.floor(Math.random() * fruitEmojis.length)], // Random Fruit Emoji
-
         clicks: 0, // Click count to track size increase
         clickCounter: 0,
         maxClicks: 13, // Maximum clicks before transforming to poop
         isDragging: false, // Track dragging state
         isPoop: false, // Track if emoji is a poop
-
       });
     };
-
-    // Create initial emojis
+    //Fruit dropper
     setInterval(() => {
       createEmoji(Vec2(Math.random() * (a.width - 100) + 50, -50));
-    }, dropRate); // New emoji every 2 seconds
-    setInterval(() => { //increment game timer 1 second
-      gameTimer+=1;
-
-    }, 1000); 
+    }, dropRate);
+    //Game Timer
+    setInterval(() => {
+      gameTimer += 1;
+    }, 1000);
     // Function to handle collisions between two objects
     const handleCollision = (b1, b2) => {
       if (b1 === b2) return; // Skip collision handling with itself
-
       const collisionVector = subtract(b2.C, b1.C);
       const dist = length(collisionVector);
       const minDist = b1.R + b2.R;
-
       if (dist < minDist) {
         const normal = normalize(collisionVector);
         const overlap = minDist - dist;
-
         const correction = scale(normal, overlap / 2);
         b1.C = subtract(b1.C, correction);
         b2.C = add(b2.C, correction);
-
         const relativeVelocity = subtract(b2.V, b1.V);
         const velocityAlongNormal = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
-
         if (velocityAlongNormal > 0) return;
-
         const restitution = 0.7;
         const impulse = (-(1 + restitution) * velocityAlongNormal) / (b1.M + b2.M);
         const impulseVector = scale(normal, impulse);
-
         b1.V = subtract(b1.V, scale(impulseVector, b1.M));
         b2.V = add(b2.V, scale(impulseVector, b2.M));
       }
     };
-
     // Handle mouse interaction
     let initialMousePos = null;
     const getTouchPos = (e) => {
       const touch = e.touches[0];
       return { x: touch.clientX, y: touch.clientY };
     };
-
     // Mouse and touch event handlers
     const onStart = (e) => {
       e.preventDefault(); // Prevent default behavior like scrolling
       const pos = e.type === 'mousedown' ? { x: e.clientX, y: e.clientY } : getTouchPos(e);
       initialTouchPos = pos;
-
       objects.forEach((obj) => {
         if (obj.isPoop) return; // Skip poop emojis
-
         const dist = length(subtract(pos, obj.C));
         if (dist < obj.R) {
           draggingEmoji = obj;
@@ -226,7 +202,6 @@
         }
       });
     };
-
     const onMove = (e) => {
       e.preventDefault(); // Prevent default behavior like scrolling
       if (draggingEmoji && !draggingEmoji.isPoop) {
@@ -234,7 +209,6 @@
         draggingEmoji.C = subtract(pos, dragOffset);
       }
     };
-
     const onEnd = (e) => {
       e.preventDefault();
       if (draggingEmoji) {
@@ -243,12 +217,10 @@
         isDragging = false;
       }
     };
-
     // Mouse events
     a.addEventListener('mousedown', onStart);
     a.addEventListener('mousemove', onMove);
     a.addEventListener('mouseup', onEnd);
-
     // Touch events
     a.addEventListener('touchstart', onStart);
     a.addEventListener('touchmove', onMove);
@@ -263,11 +235,9 @@
           killPoop(b);
         }, decay); //destroy the poop after the decay time
       }
-
     }
     const killPoop = (b) => {
       const shrinkRate = 0.99; // Shrinking factor per frame
-
       const shrinkPoop = () => {
         if (b.R > 2) { // Continue shrinking until the radius is small enough
           b.R *= shrinkRate;
@@ -277,33 +247,33 @@
           objects = objects.filter(obj => obj !== b);
         }
       };
-
       shrinkPoop(); // Start the shrinking process
     };
-    const eat = ["😊", "😁", "🙂", "😌"];
-    const yumSounds = [yum1,yum2];
-    const yuck = ["😣", "😖", "🤢", "🥴"];
-    const yuckSounds = [ew1,ew2];
+
+    //Eat Reactions
+    const yum = ["😛", "😁", "🤤", "😄"];
+    const yumSounds = [yum1, yum2];
+    const yuck = ["😣", "😖", "🤢", "🥴", "😵‍💫", "😫", "🤮"];
+    const yuckSounds = [ew1, ew2];
     const destroy = (b) => {
       if (!isEating) {
         if (b.isPoop) {
           isEating = true;
           points -= 50;
           monster.face = yuck[Math.floor(Math.random() * yuck.length)];
-          yuckSounds[Math.floor(Math.random() * yuckSounds.length)].play(); 
+          yuckSounds[Math.floor(Math.random() * yuckSounds.length)].play();
         } else {
           isEating = true;
           points += b.clicks;
-          monster.face = eat[Math.floor(Math.random() * eat.length)];
-          yumSounds[Math.floor(Math.random() * yumSounds.length)].play(); 
+          monster.face = yum[Math.floor(Math.random() * yum.length)];
+          yumSounds[Math.floor(Math.random() * yumSounds.length)].play();
         }
         objects = objects.filter((obj) => obj !== b); // Remove emoji
         setTimeout(() => {
-          monster.face =  monster.currentFace;
+          monster.face = monster.currentFace;
           isEating = false;
         }, 500);
       }
-
     }
     // Moving bar initialization
     let barPos = Vec2((a.width - barWidth) / 2, a.height / 2 - barHeight / 2);
@@ -316,22 +286,18 @@
       drawHappinessBar();
       // Draw the ground
       const groundHeight = 50;
-      c.fillStyle = '#a0a0a0';
+      c.fillStyle = '#228B22';
       c.fillRect(0, a.height - groundHeight, a.width, groundHeight); // Ground platform
       // Draw the moving bar
-      c.fillStyle = '#ff0000';
+      c.fillStyle = 'rgba(0, 0, 0, 0)'; // Transparent color (invisible)
       c.fillRect(barPos.x, barPos.y, barWidth, barHeight);
       // Update bar position
       barPos.x += barSpeed * barDirection;
       if (barPos.x <= 0 || barPos.x + barWidth >= a.width) {
         barDirection *= -1; // Change direction
       }
-      // Draw left and right vertical walls
-      c.fillStyle = '#000';
-      c.fillRect(barPos.x - wallWidth, barPos.y - wallHeight / 2, wallWidth, wallHeight); // Left wall
-      c.fillRect(barPos.x + barWidth, barPos.y - wallHeight / 2, wallWidth, wallHeight); // Right wall
-      objects = objects.filter((b) => !b.isPoop || !b.isDragging); // Remove dragging poop emojis
 
+      objects = objects.filter((b) => !b.isPoop || !b.isDragging); // Remove dragging poop emojis
 
       objects.forEach((b, i) => {
         if (!b.isDragging && b.M) {
@@ -366,13 +332,13 @@
           // Check collision with the moving bar and walls
           if (b.C.x + b.R > barPos.x && b.C.x - b.R < barPos.x + barWidth &&
             b.C.y + b.R > barPos.y && b.C.y - b.R < barPos.y + barHeight) {
-            if (b.clicks < 7) {
-              b.V.y *= -0.7; // Bounce off the bar
-              b.V.x *= 0.7; // Reduce horizontal speed on bounce
-            } else {
-              destroy(b);
-
-            }
+            destroy(b);
+            // if (b.clicks < 7) {
+            //   b.V.y *= -0.7; // Bounce off the bar
+            //   b.V.x *= 0.7; // Reduce horizontal speed on bounce
+            // } else {
+            //   destroy(b);
+            // }
           }
         }
         for (let j = i + 1; j < objects.length; j++) {
@@ -382,6 +348,7 @@
         c.save();
         c.translate(b.C.x, b.C.y);
         c.rotate(b.B);
+        c.fillStyle = '#000000';
         c.font = `${b.R * 2}px serif`;
         c.textAlign = 'center';
         c.fillText(b.Z, 0, b.R / 1.5);
@@ -389,19 +356,20 @@
 
         // Draw click count above emoji
         c.fillStyle = '#000000';
-        c.font = '16px Arial';
+        const fruitFontSize = b.R *.4;
+        // Set the font size dynamically for the emoji face
+        c.font = `${fruitFontSize}px Arial`;
+        //c.font = '16px Arial';
         c.textAlign = 'center';
         c.fillText(`~${b.clicks}~`, b.C.x, b.C.y - b.R - 20); // Display click count
       });
-
       // Draw points
       c.fillStyle = '#000000';
       c.font = '24px Arial';
-      c.fillText(`Points: ${points}`, 60, 40); // Display points on canvas
-
+      c.fillText(`Points: ${points}`, a.width * .05, a.height * .05); // Display points on canvas
+      c.fillText(`Level: ${level}`, a.width * .05, a.height * .1); // Display points on canvas
       requestAnimationFrame(updateScene);
     };
-
     updateScene(); // Start animation loop
   </script>
 </body>
