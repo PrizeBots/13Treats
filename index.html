@@ -12,6 +12,7 @@
     const ew2 = document.getElementById('ew2');
     a.width = innerWidth * .98;
     a.height = innerHeight * .97;
+    window.addEventListener('resize', resizeScreen);
     const maxPoints = 1000;
     const minPoints = -1000;
     let objects = [];
@@ -86,11 +87,11 @@
     };
 
     const drawMonster = () => {
-      const monsterSize = window.innerWidth * 0.25;
+      const monsterSize = a.width* 0.2;
       // Set the font size dynamically for the emoji face
       c.font = `${monsterSize}px Arial`;
       c.textAlign = "center";
-      c.fillText(monster.face, monster.pos.x + monster.mouthWidth / 2, monster.pos.y + 60);
+      c.fillText(monster.face, monster.pos.x + monster.mouthWidth / 2, a.height/2);
     };
     // Monster object with its beam and walls (mouth)
     let monster = {
@@ -104,6 +105,13 @@
       wallWidth: wallWidth,
       wallHeight: wallHeight
     };
+
+    function resizeScreen() {
+      a.width = innerWidth * .98;
+      a.height = innerHeight * .97;
+    }
+
+
     //Monster loop
     const updateMonster = () => {
       monster.pos.x += monster.speed * monster.direction; // Move the monster
@@ -276,7 +284,7 @@
       }
     }
     // Moving bar initialization
-    let barPos = Vec2((a.width - barWidth) / 2, a.height / 2 - barHeight / 2);
+    let barPos = Vec2((a.width - barWidth) / 2, a.height / 2 );
     let barDirection = 1; // 1 for right, -1 for left
     // Animation loop and physics
     const updateScene = () => {
@@ -289,7 +297,7 @@
       c.fillStyle = '#228B22';
       c.fillRect(0, a.height - groundHeight, a.width, groundHeight); // Ground platform
       // Draw the moving bar
-      c.fillStyle = 'rgba(0, 0, 0, 0)'; // Transparent color (invisible)
+     // c.fillStyle = 'rgba(0, 0, 0, 0)'; // Transparent color (invisible)
       c.fillRect(barPos.x, barPos.y, barWidth, barHeight);
       // Update bar position
       barPos.x += barSpeed * barDirection;
@@ -356,7 +364,7 @@
 
         // Draw click count above emoji
         c.fillStyle = '#000000';
-        const fruitFontSize = b.R *.4;
+        const fruitFontSize = b.R * .4;
         // Set the font size dynamically for the emoji face
         c.font = `${fruitFontSize}px Arial`;
         //c.font = '16px Arial';
