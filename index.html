@@ -1,17 +1,33 @@
-﻿<body id="b">
+﻿<head>
+  <title>Fresh Fruit Feeder</title>
+  <style>
+    body {
+      background-color: skyblue;
+      /* Set the background to sky blue */
+    }
+  </style>
+</head>
+
+<body id="b">
   <canvas id="a"></canvas>
   <audio id="yum1" src="./yum1.wav"></audio>
   <audio id="yum2" src="./yum2.wav"></audio>
   <audio id="ew1" src="./ew1.wav"></audio>
   <audio id="ew2" src="./ew2.wav"></audio>
+  <audio id="poop1" src="./poop1.wav"></audio>
   <script>
     const c = a.getContext('2d');
     const yum1 = document.getElementById('yum1');
     const yum2 = document.getElementById('yum2');
     const ew1 = document.getElementById('ew1');
     const ew2 = document.getElementById('ew2');
-    a.width = innerWidth * .98;
-    a.height = innerHeight * .97;
+    yum1.volume = 0.5; // 50% volume
+    yum2.volume = 0.5; // 80% volume
+    ew1.volume = 1;  // 30% volume
+    ew2.volume = 1;  // 60% volume
+    poop1.volume = 1; // Full volume
+    a.width = innerWidth * .96;
+    a.height = innerHeight * .96;
     window.addEventListener('resize', resizeScreen);
     const maxPoints = 1000;
     const minPoints = -1000;
@@ -21,25 +37,34 @@
     let isDragging = false;
     let initialTouchPos = null;
     let monsterY = a.height / 2;
+    let monsterX = 0;
     let barPosY = monsterY;
-
+    let barPosX = 0;
     let isEating = false;
-    let clickThreshold = 5; // Movement threshold to differentiate between click and drag
-    let growthRate = 6;
+    let clickThreshold = 5;
+    let growthRate = 0.002;
+    let growth = 1.1;
     let dropRate = 1000;
     let fruitSize = 20;
-    let points = 0; // Points counter
-    let decay = 10000;
+    let points = 0;
+    let happiness = 0;
+    let decay = 20000;
+    let levelRate = 0.002
     let level = 1;
+    let maxObjects = 200;
     let gameTime = 0;
     let gameTimer = 0;
     let monsterSize = a.width / 4;
-    let barWidth = a.width / 4; // Width of the moving bar
-    const barHeight = 30; // Height of the moving bar
-    const barSpeed = 2; // Speed at which the bar moves
-    const wallWidth = 10; // Width of vertical walls at the bar ends
-    const wallHeight = 100; // Height of the vertical walls
-
+    let frenzy = false;
+    let poopPoints = 50;
+    let barWidth = monsterSize * .8;
+    let barHeight = 30;
+    let barSpeed = 2;
+    let speed = 2;
+    let isLandscape = false;
+    let isPortrait = false;
+    let isMobile = false;
+    let groundHeight = 50;
     // Vector operations
     const Vec2 = (x, y) => ({ x, y });
     const add = (v1, v2) => Vec2(v1.x + v2.x, v1.y + v2.y);
@@ -52,133 +77,96 @@
       const barMaxWidth = a.width / 2; // Half the canvas width for the full bar
       const barX = (a.width - barMaxWidth) / 2;
       const barY = 10;
-      // Calculate the middle of the bar, which represents 0 points
       const middleX = barX + barMaxWidth / 2;
-      // Calculate the current width of the bar based on points
-      const barWidth = Math.min(Math.abs(points) / maxPoints * (barMaxWidth / 2), barMaxWidth / 2);
-      // Draw the background of the bar
-      c.fillStyle = '#a0a0a0'; // Background color
+      const barWidth = Math.min(Math.abs(happiness) / maxPoints * (barMaxWidth / 2), barMaxWidth / 2);
+      c.fillStyle = '#a0a0a0';
       c.fillRect(barX, barY, barMaxWidth, barHeight);
-      // Draw the bar itself based on points
-      if (points >= 0) {
-        c.fillStyle = '#00ff00'; // Green for positive points
+      if (happiness >= 0) {
+        c.fillStyle = '#00ff00';
         c.fillRect(middleX, barY, barWidth, barHeight);
       } else {
-        c.fillStyle = '#ff0000'; // Red for negative points
+        c.fillStyle = '#ff0000';
         c.fillRect(middleX - barWidth, barY, barWidth, barHeight);
       }
-      // Draw the vertical black line in the middle (representing 0 points)
       c.strokeStyle = '#000000';
       c.beginPath();
       c.moveTo(middleX, barY);
       c.lineTo(middleX, barY + barHeight);
       c.stroke();
-      // Draw the outline of the bar
       c.strokeRect(barX, barY, barMaxWidth, barHeight);
-      // Check for game over
-      if (points <= minPoints) {
+      if (happiness <= minPoints) {
         gameOver();
       }
     };
-    resizeScreen();
-
     // Game over function
     const gameOver = () => {
-      alert("Game Over! You reached -1000 happiness.");
-      points = 0; // Reset points or reload the game
+      alert(`Game Over! You Reached Level ${level} with ${points} points!`);
+      happiness = 0;
+      points = 0;
+      level = 1;
+      gameTimer = 0;
+      monster.currentFace = "😐";
       objects = []; // Clear all objects
     };
-
-    const drawMonster = () => {
-      //if PC then
-      //const monsterSize = a.width * 0.2;
-      // monsterSize = window.innerWidth/4;
-      //else mobile portrait  
-      //const monsterSize = a.width* 0.1;
-      //else monbile landscape
-      //const monsterSize = a.width* 0.15;
-
-      // Set the font size dynamically for the emoji face
-
+    const levelIncrement = 5;
+    const checkLevel = () => {
+      let thisLevel = level;
+      level = Math.min(Math.floor(gameTimer / levelIncrement) + 1, 100);
+      if (thisLevel != level) {
+        dropRate *= .8;
+        console.log(dropRate)
+        updateDropRate(dropRate);
+      }
     };
-    // Monster object with its beam and walls (mouth)
     let monster = {
-      face: "😐", // Default emoji face
+      face: "😐",
       currentFace: "😐",
       pos: Vec2((a.width - barWidth) / 2, a.height / 2 - barHeight / 2),
       speed: barSpeed,
       direction: 1,
       size: 2,
-      mouthWidth: barWidth,
-      mouthHeight: barHeight,
-      wallWidth: wallWidth,
-      wallHeight: wallHeight
+      mouthHeight: barHeight
     };
-
     function resizeScreen() {
-
-      const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+      isMobile = /Mobi|Android/i.test(navigator.userAgent);
       a.width = window.innerWidth;
       a.height = window.innerHeight;
-      const isLandscape = a.width > a.height;
-      const isPortrait = a.height > a.width;
-      c.clearRect(0, 0, a.width, a.height);
-      // barPos = Vec2((a.width - barWidth) / 2, a.height / 2);
-      if (!isMobile) { // PC view
-        console.log("PC!")
-        monsterY = a.height / 2;
-        monsterSize = a.width * 0.2;
-        fruitSize = 20;
-      } else if (isPortrait) {
-        console.log("isPortrait!")
-        monsterSize = a.width * 0.1;
-        monsterY = a.height - a.height * .25;
-        fruitSize = .5;
-        barPosY = monsterY*.99;
-      } else if (isLandscape) {
-        console.log("isLandscape!")
-        monsterSize = a.width / 5;
-        fruitSize = 1;
-        monsterY = a.height / 2.5;
-        barPosY = monsterY*.95;
-      }
-      
-      // a.width = innerWidth * .98;
-      // a.height = innerHeight * .97;
+      isLandscape = a.width > a.height;
+      isPortrait = a.height > a.width;
     }
-
-
-    //Monster loop
     const updateMonster = () => {
+      if (!frenzy) {
 
-      monster.pos.x += monster.speed * monster.direction; // Move the monster
-      if (monster.pos.x <= 0 || monster.pos.x + monster.mouthWidth >= a.width) {
-        monster.direction *= -1; // Reverse direction if at edge
+        if (happiness >= 0 && happiness < 20) monster.currentFace = "😐";
+        else if (happiness >= 20 && happiness < 100) monster.currentFace = "🙂";
+        else if (happiness >= 100 && happiness < 200) monster.currentFace = "😀";
+        else if (happiness >= 200 && happiness < 300) monster.currentFace = "😃";
+        else if (happiness >= 300 && happiness < 400) monster.currentFace = "😋";
+        else if (happiness >= 400 && happiness < 500) monster.currentFace = "🥰";
+        else if (happiness >= 500 && happiness < 600) monster.currentFace = "😚";
+        else if (happiness >= 600 && happiness < 700) monster.currentFace = "🤩";
+        else if (happiness > 700) monster.currentFace = "😍";
+        //Angry
+        else if (happiness < 0 && happiness > -25) monster.currentFace = "😕";
+        else if (happiness < -25 && happiness > -50) monster.currentFace = "🙁";
+        else if (happiness < -50 && happiness > -75) monster.currentFace = "😟";
+        else if (happiness < -75 && happiness > -100) monster.currentFace = "😢";
+        else if (happiness < -125 && happiness > -150) monster.currentFace = "😧";
+        else if (happiness < -175 && happiness > -200) monster.currentFace = "😣";
+        else if (happiness < -225 && happiness > -250) monster.currentFace = "😠";
+        else if (happiness < -250 && happiness > -350) monster.currentFace = "😡";
+        else if (happiness <= -350 && happiness > -450) monster.currentFace = "🤬";
+        else if (happiness <= -450) monster.currentFace = "😵";
       }
-      c.font = `${monsterSize}px Arial`;
-      c.textAlign = "center";
-      c.fillText(monster.face, monster.pos.x + monster.mouthWidth / 2, monsterY);
-      //onster.pos.y = monsterY;
-      //Adjust monster based on his happiness points
-      if (points > 20 && points < 100) monster.currentFace = "🙂";
-      else if (points >= 100 && points < 200) monster.currentFace = "😀";
-      else if (points >= 200 && points < 300) monster.currentFace = "😃";
-      else if (points >= 300 && points < 400) monster.currentFace = "😋";
-      else if (points >= 400 && points < 500) monster.currentFace = "🥰";
-      else if (points >= 500 && points < 600) monster.currentFace = "😚";
-      else if (points >= 600 && points < 700) monster.currentFace = "🤩";
-      else if (points > 700) monster.currentFace = "😍";
-      //Angry
-      else if (points < 0 && points > -25) monster.currentFace = "😕";
-      else if (points < -25 && points > -50) monster.currentFace = "🙁";
-      else if (points < -50 && points > -75) monster.currentFace = "😟";
-      else if (points < -75 && points > -100) monster.currentFace = "😢";
-      else if (points < -125 && points > -150) monster.currentFace = "😧";
-      else if (points < -175 && points > -200) monster.currentFace = "😣";
-      else if (points < -225 && points > -250) monster.currentFace = "😠";
-      else if (points < -250 && points > -350) monster.currentFace = "😡";
-      else if (points <= -350 && points > -450) monster.currentFace = "🤬";
-      else if (points <= -450) monster.currentFace = "😵";
+      if (happiness >= maxPoints && !frenzy) {
+        frenzy = true;
+        monster.currentFace = "🤪"
+        setTimeout(() => {
+          frenzy = false;
+          happiness = 0;
+        }, 7000);
+      } else if (happiness > maxPoints) happiness = maxPoints;
+
     };
     //Create fruits
     const fruitEmojis = ["🍎", "🍊", "🍌", "🍇", "🍉", "🍍", "🍓", "🍑", "🍒", "🥭", "🍐", "🍏", "🍋", "🍈", "🍅", "🍆", "🥑", "🫐"];
@@ -191,19 +179,57 @@
         D: 0, // Angular Velocity
         R, // Radius
         //  Z: String.fromCodePoint(Math.random() * 0x45 | 0 + 0x1F600), // Random Emoji
-        Z: fruitEmojis[Math.floor(Math.random() * fruitEmojis.length)], // Random Fruit Emoji
-        clicks: 0, // Click count to track size increase
+        Z: fruitEmojis[Math.floor(Math.random() * fruitEmojis.length)],
+        clicks: 0,
         clickCounter: 0,
-        maxClicks: 13, // Maximum clicks before transforming to poop
-        isDragging: false, // Track dragging state
-        isPoop: false, // Track if emoji is a poop
+        maxClicks: 13,
+        isDragging: false,
+        isPoop: false,
+        active: true
       });
     };
-    //Fruit dropper
-    setInterval(() => {
-      createEmoji(Vec2(Math.random() * (a.width - 100) + 50, -50));
-    }, dropRate);
-    //Game Timer
+    window.addEventListener('keydown', function (event) {
+      if (event.key === 'p' || event.key === 'P') {
+        objects.push({
+          C: (Vec2(Math.random() * (a.width - 100) + 50, -50)),
+          V: Vec2(0, 0),
+          M: 1 / 30,
+          B: 0,
+          D: 0,
+          R: 30,
+          Z: '💩',
+          clicks: 0,
+          clickCounter: 0,
+          maxClicks: 13,
+          isDragging: false,
+          isPoop: true,
+          active: true,
+        });
+      }
+      if (event.key === 'f') {
+        if (frenzy) {
+          frenzy = false;
+
+        }
+        else {
+
+          frenzy = true;
+        }
+      }
+    });
+    let intervalId;
+    const startDropping = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      intervalId = setInterval(() => {
+        if (objects.length < maxObjects) createEmoji(Vec2(Math.random() * (a.width - 100) + 50, -50));
+      }, dropRate);
+    };
+    const updateDropRate = (newRate) => {
+      dropRate = newRate;
+      startDropping();
+    };
     setInterval(() => {
       gameTimer += 1;
     }, 1000);
@@ -241,9 +267,15 @@
       const pos = e.type === 'mousedown' ? { x: e.clientX, y: e.clientY } : getTouchPos(e);
       initialTouchPos = pos;
       objects.forEach((obj) => {
-        if (obj.isPoop) return; // Skip poop emojis
+        // if (obj.isPoop) return; // Skip poop emojis
         const dist = length(subtract(pos, obj.C));
-        if (dist < obj.R) {
+        if (dist < obj.R && obj.active) {
+          if (obj.isPoop) {
+            killPoop(obj);
+            poop1.play();
+            obj.active = false;
+            return;
+          }
           draggingEmoji = obj;
           obj.isDragging = true;
           obj.V = Vec2(0, 0);
@@ -274,16 +306,18 @@
     a.addEventListener('touchstart', onStart);
     a.addEventListener('touchmove', onMove);
     a.addEventListener('touchend', onEnd);
+    //grow a fruit into poop
     const grow = (b) => {
       if (b.clicks > 13) b.clicks = 13
       if (b.clicks >= 13 && !b.isPoop) {
-        b.Z = '💩'; // Change emoji to poop
-        b.isPoop = true; // Mark it as poop
+        b.Z = '💩';
+        b.isPoop = true;
         setInterval(() => {
           killPoop(b);
-        }, decay); //destroy the poop after the decay time
+        }, decay);
       }
     }
+    //poop expires
     const killPoop = (b) => {
       const shrinkRate = 0.99; // Shrinking factor per frame
       const shrinkPoop = () => {
@@ -304,60 +338,117 @@
     const yuck = ["😣", "😖", "🤢", "🥴", "😵‍💫", "😫", "🤮"];
     const yuckSounds = [ew1, ew2];
     const destroy = (b) => {
-      if (!isEating) {
-        if (b.isPoop) {
-          isEating = true;
-          points -= 50;
-          monster.face = yuck[Math.floor(Math.random() * yuck.length)];
-          yuckSounds[Math.floor(Math.random() * yuckSounds.length)].play();
-        } else {
-          isEating = true;
-          points += b.clicks;
-          monster.face = yum[Math.floor(Math.random() * yum.length)];
-          yumSounds[Math.floor(Math.random() * yumSounds.length)].play();
-        }
-        objects = objects.filter((obj) => obj !== b); // Remove emoji
-        setTimeout(() => {
-          monster.face = monster.currentFace;
-          isEating = false;
-        }, 500);
+      //  if (!isEating) {
+      if (b.isPoop && !frenzy) {
+        isEating = true;
+        happiness -= poopPoints;
+        monster.face = yuck[Math.floor(Math.random() * yuck.length)];
+        yuckSounds[Math.floor(Math.random() * yuckSounds.length)].play();
+      } else {
+        isEating = true;
+        happiness += b.clicks;
+        points += b.clicks;
+        monster.face = yum[Math.floor(Math.random() * yum.length)];
+        yumSounds[Math.floor(Math.random() * yumSounds.length)].play();
       }
+      objects = objects.filter((obj) => obj !== b); // Remove emoji
+      setTimeout(() => {
+        monster.face = monster.currentFace;
+        isEating = false;
+      }, 500);
     }
+    // }
     // Moving bar initialization
     let barPos = Vec2((a.width - barWidth) / 2, a.height / 2);
+    newBarPos = barPos;
     let barDirection = 1; // 1 for right, -1 for left
+
     // Animation loop and physics
     const updateScene = () => {
       c.clearRect(0, 0, a.width, a.height); // Clear canvas
-      if (monster) {
-        drawMonster();
-        updateMonster();
+      if (!isMobile) { // PC view
+        a.width = window.innerWidth * .98;
+        a.height = window.innerHeight * .97;
+        barHeight = 30;
+        monsterY = a.height / 2;
+        monsterSize = a.width * 0.2;
+        fruitSize = 20;
+        barPosY = monsterY * .8;
+        barSpeed = 2;
+        speed = 2;
+        groundHeight = 50;
+      } else if (isPortrait) {
+        a.width = window.innerWidth * .97;
+        a.height = window.innerHeight * .96;
+        barHeight = 10;
+        monsterSize = a.width * 0.2;
+        monsterY = a.height - a.height * .4;
+        fruitSize = 10;
+        barPosY = monsterY * .96;
+        barSpeed = 1;
+        speed = 1;
+        groundHeight = 30;
+      } else if (isLandscape) {
+        a.width = window.innerWidth * .98;
+        a.height = window.innerHeight * .95;
+        barHeight = 20;
+        monsterY = a.height * .5;
+        monsterSize = a.width / 5;
+        fruitSize = 15;
+        barPosY = monsterY * .75;
+        barSpeed = 2;
+        speed = 2;
+        groundHeight = 10;
       }
+      //Move Monster
+      if (frenzy) {
+        const amplitude = 210; // Controls the height of the wave
+        const frequency = 0.02; // Controls the speed of the wave
+        const sinOffset = Math.sin(monster.pos.x * frequency) * amplitude;
+        monsterY = (a.height / 2) + sinOffset; // Base Y position adjusted by the sine wave
+        barPosY = monsterY
+        speed = 8;
+      }
+      monster.speed = speed;
+      barWidth = monsterSize * .8;
+      monster.pos.x += monster.speed * monster.direction; // Move the monster
+      if (monster.pos.x <= 0) {
+        monster.pos.x = 0;
+        monster.direction *= -1;
+      } else if (monster.pos.x + barWidth >= a.width) {
+        monster.pos.x = a.width - barWidth;
+        monster.direction *= -1;
+      }
+      monsterX = monster.pos.x;
+      c.font = `${monsterSize}px Arial`;
+      c.textAlign = "center";
+      c.fillText(monster.face, monster.pos.x + barWidth / 2, monsterY);
+
+
+      checkLevel();
+      updateMonster();
       drawHappinessBar();
       // Draw the ground
-      let groundHeight = 50;
       c.fillStyle = '#228B22';
       c.fillRect(0, a.height - groundHeight, a.width, groundHeight); // Ground platform
-
       // Draw the moving bar
-      // c.fillStyle = 'rgba(0, 0, 0, 0)'; // Transparent color (invisible)
+      c.fillStyle = 'rgba(0, 0, 0, 0)'; // Transparent color (invisible)
       barPos.y = barPosY;
+      // barPos.x = barPosX;
+      barPos.x = monsterX;
       c.fillRect(barPos.x, barPos.y, barWidth, barHeight);
-      // Update bar position
-      barPos.x += barSpeed * barDirection;
-      if (barPos.x <= 0 || barPos.x + barWidth >= a.width) {
-        barDirection *= -1; // Change direction
-      }
+      //update objects
       objects = objects.filter((b) => !b.isPoop || !b.isDragging); // Remove dragging poop emojis
       objects.forEach((b, i) => {
         if (!b.isDragging && b.M) {
           if (!b.isPoop) {
-            b.clickCounter += 0.008
+            b.clickCounter += growthRate;
             const roundIt = Math.round(b.clickCounter);
             if (roundIt >= 1) {
               b.clicks++;
               b.clickCounter = 0;
-              b.R += growthRate;
+              b.R *= growth;
+              growthRate += 0.000001;
               grow(b);
             }
           }
@@ -367,10 +458,6 @@
             b.C.y = a.height - groundHeight - b.R;
             b.V.y *= -0.7; // Bounce with energy loss
           }
-          if (b.isPoop && b.C.x - b.R <= 0 || b.C.x + b.R >= a.width) {
-            // objects = objects.filter((obj) => obj !== b); // Remove emoji
-            //return; 
-          }
           if (b.C.x - b.R <= 0) {
             b.C.x = b.R;
             b.V.x *= -1;
@@ -379,10 +466,10 @@
             b.C.x = a.width - b.R;
             b.V.x *= -1; // Reverse horizontal velocity on wall collision
           }
-          // Check collision with the moving bar and walls
+          // Check collision with mouth bar
           if (b.C.x + b.R > barPos.x && b.C.x - b.R < barPos.x + barWidth &&
             b.C.y + b.R > barPos.y && b.C.y - b.R < barPos.y + barHeight) {
-            destroy(b);
+            if (b.active) destroy(b);
             // if (b.clicks < 7) {
             //   b.V.y *= -0.7; // Bounce off the bar
             //   b.V.x *= 0.7; // Reduce horizontal speed on bounce
@@ -403,25 +490,22 @@
         c.textAlign = 'center';
         c.fillText(b.Z, 0, b.R / 1.5);
         c.restore();
-
-        // Draw click count above emoji
         c.fillStyle = '#000000';
         const fruitFontSize = b.R * .4;
-        // Set the font size dynamically for the emoji face
         c.font = `${fruitFontSize}px Arial`;
-        //c.font = '16px Arial';
         c.textAlign = 'center';
         c.fillText(`~${b.clicks}~`, b.C.x, b.C.y - b.R - 20); // Display click count
       });
-      // Draw points
       c.fillStyle = '#000000';
-      let fontSize=  a.width * .03;
+      let fontSize = a.width * .03;
       c.font = `${fontSize}px Arial`;
       c.textAlign = 'left';
-      c.fillText(`Points: ${points}`, fontSize, fontSize*1.5); // Display points on canvas
-      c.fillText(`Level: ${level}`, fontSize, fontSize*3); // Display points on canvas
+      c.fillText(`Points: ${points}`, fontSize, fontSize * 1.5); // Display points on canvas
+      c.fillText(`Level: ${level}`, fontSize, fontSize * 2.5); // Display points on canvas
       requestAnimationFrame(updateScene);
     };
+    resizeScreen();
+    startDropping();
     updateScene(); // Start animation loop
   </script>
 </body>
