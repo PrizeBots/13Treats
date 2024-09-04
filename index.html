@@ -48,8 +48,8 @@
     let fruitSize = 20;
     let points = 0;
     let happiness = 0;
-    let decay = 20000;
-    let levelRate = 0.002
+    let decay = 5000;
+   
     let level = 1;
     let maxObjects = 200;
     let gameTime = 0;
@@ -105,7 +105,10 @@
       points = 0;
       level = 1;
       gameTimer = 0;
+      dropRate = 1000;
+      updateDropRate(dropRate);
       monster.currentFace = "😐";
+      growthRate = 0.002
       objects = []; // Clear all objects
     };
     const levelIncrement = 5;
@@ -114,7 +117,6 @@
       level = Math.min(Math.floor(gameTimer / levelIncrement) + 1, 100);
       if (thisLevel != level) {
         dropRate *= .8;
-        console.log(dropRate)
         updateDropRate(dropRate);
       }
     };
