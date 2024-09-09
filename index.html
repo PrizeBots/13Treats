@@ -3,16 +3,30 @@
   <style>
     body {
       background-color: rgb(135, 206, 235);
+      cursor: pointer;
     }
   </style>
 </head>
+
 <body id="b">
-  <div id="rulesModal"
-    style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000;">
-    <div style="background-color: white; padding: 20px; text-align: center;">
-      <p>Welcome to Fresh Fruit Feeder! Drag fruit to feed!</p><br>Bigger fruit #s = more points. But watch out for 13s!
+  <div id="rulesModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; 
+    justify-content: center; align-items: center; z-index: 1000;">
+    <div
+      style="background-color: white; padding: 20px; text-align: center; border-radius: 15px;line-height: .9; font-family: sans-serif;">
+      <p><b>🍎🍊🍌🍇Welcome to Fresh Fruit Feeder!🍈🍅🍆🥑</b><br> <br>Drag fruit to face to feed!<br><br>
+        😐😐😐<br><br>
+        Bigger fruit #s = more points.<br><br>
+        🍉🍍🍓🍑🍒🥭🍐🍏🍋<br><br>
+        Fill the happiness meter to go into a feeding frenzy!<br><br>
+        🤪🤪🤪<br><br>
+        Wrong way and game over!<br><br>
+        😡😡😡<br><br>
+        Beware of <b>13s!</b><br><br>
+        😖🤢🥴
       </p>
-      <button onclick="closeModal()">Let's go!</button>
+      <button onclick="closeModal()" style="font-size: 20px; padding: 15px 30px; width: auto;">
+        <b>Start Feeding!</b>
+      </button>
     </div>
   </div>
   <canvas id="a"></canvas>
@@ -45,8 +59,8 @@
     const ew2 = document.getElementById('ew2');
     yum1.volume = 0.5;
     yum2.volume = 0.5;
-    ew1.volume = 1; 
-    ew2.volume = 1; 
+    ew1.volume = 1;
+    ew2.volume = 1;
     poop1.volume = 1;
     a.width = innerWidth * .96;
     a.height = innerHeight * .96;
@@ -70,7 +84,6 @@
     let fruitSize = 20;
     let points = 0;
     let happiness = 0;
-    let decay = 5000;
     let level = 1;
     let maxObjects = 100;
     let gameTime = 0;
@@ -86,6 +99,8 @@
     let isPortrait = false;
     let isMobile = false;
     let groundHeight = 50;
+    let twelveMin = 1;
+    let twelveMax = 20;
     const Vec2 = (x, y) => ({ x, y });
     const add = (v1, v2) => Vec2(v1.x + v2.x, v1.y + v2.y);
     const subtract = (v1, v2) => Vec2(v1.x - v2.x, v1.y - v2.y);
@@ -94,7 +109,7 @@
     const normalize = (v) => scale(v, 1 / (length(v) || 1));
     const drawHappinessBar = () => {
       const barHeight = 30;
-      const barMaxWidth = a.width / 2; 
+      const barMaxWidth = a.width / 2;
       const barX = (a.width - barMaxWidth) / 2;
       const barY = 10;
       const middleX = barX + barMaxWidth / 2;
@@ -128,7 +143,7 @@
       updateDropRate(dropRate);
       monster.currentFace = "😐";
       growthRate = 0.002
-      objects = []; 
+      objects = [];
     };
     const levelIncrement = 10;
     const checkLevel = () => {
@@ -292,7 +307,7 @@
       });
     };
     const onMove = (e) => {
-      e.preventDefault(); 
+      e.preventDefault();
       if (draggingEmoji && !draggingEmoji.isPoop) {
         const pos = e.type === 'mousemove' ? { x: e.clientX, y: e.clientY } : getTouchPos(e);
         draggingEmoji.C = subtract(pos, dragOffset);
@@ -313,13 +328,17 @@
     a.addEventListener('touchmove', onMove);
     a.addEventListener('touchend', onEnd);
     const grow = (b) => {
-      if (b.clicks > 13) b.clicks = 13
-      if (b.clicks >= 13 && !b.isPoop) {
-        b.Z = '💩';
-        b.isPoop = true;
-        setInterval(() => {
-          killPoop(b);
-        }, decay);
+      if (b.clicks >= 12 && !b.isPoop) {
+        const turnToPoop = Math.floor(Math.random() * (twelveMax - twelveMin) + twelveMin) * 1000;
+        b.clicks = 12;
+        setTimeout(() => {
+          b.clicks = 13
+          b.Z = '💩';
+          b.isPoop = true;
+          setInterval(() => {
+            killPoop(b);
+          }, Math.floor(Math.random() * (twelveMax - twelveMin) + twelveMin) * 1000);
+        }, turnToPoop);
       }
     }
     const killPoop = (b) => {
@@ -361,8 +380,8 @@
     newBarPos = barPos;
     let barDirection = 1;
     const updateScene = () => {
-      c.clearRect(0, 0, a.width, a.height); 
-      if (!isMobile) { 
+      c.clearRect(0, 0, a.width, a.height);
+      if (!isMobile) {
         a.width = window.innerWidth * .98;
         a.height = window.innerHeight * .97;
         barHeight = 30;
@@ -397,16 +416,16 @@
         groundHeight = 10;
       }
       if (frenzy) {
-        const amplitude = 210; 
-        const frequency = 0.02; 
+        const amplitude = 210;
+        const frequency = 0.02;
         const sinOffset = Math.sin(monster.pos.x * frequency) * amplitude;
-        monsterY = (a.height / 2) + sinOffset; 
+        monsterY = (a.height / 2) + sinOffset;
         barPosY = monsterY
         speed = 8;
       }
       monster.speed = speed;
       barWidth = monsterSize * .8;
-      monster.pos.x += monster.speed * monster.direction; 
+      monster.pos.x += monster.speed * monster.direction;
       if (monster.pos.x <= 0) {
         monster.pos.x = 0;
         monster.direction *= -1;
@@ -453,7 +472,7 @@
           }
           if (b.C.x + b.R >= a.width) {
             b.C.x = a.width - b.R;
-            b.V.x *= -1; 
+            b.V.x *= -1;
           }
           if (b.C.x + b.R > barPos.x && b.C.x - b.R < barPos.x + barWidth &&
             b.C.y + b.R > barPos.y && b.C.y - b.R < barPos.y + barHeight) {
@@ -475,14 +494,14 @@
         const fruitFontSize = b.R * .4;
         c.font = `${fruitFontSize}px Arial`;
         c.textAlign = 'center';
-        c.fillText(`~${b.clicks}~`, b.C.x, b.C.y - b.R - 20); 
+        c.fillText(`~${b.clicks}~`, b.C.x, b.C.y - b.R - 20);
       });
       c.fillStyle = '#000000';
       let fontSize = a.width * .03;
       c.font = `${fontSize}px Arial`;
       c.textAlign = 'left';
-      c.fillText(`Points: ${points}`, fontSize, fontSize * 1.5); 
-      c.fillText(`Level: ${level}`, fontSize, fontSize * 2.5); 
+      c.fillText(`Points: ${points}`, fontSize, fontSize * 1.5);
+      c.fillText(`Level: ${level}`, fontSize, fontSize * 2.5);
       requestAnimationFrame(updateScene);
     };
   </script>
