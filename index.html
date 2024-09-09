@@ -16,7 +16,7 @@
       <p><b>🍎🍊🍌🍇Welcome to Fresh Fruit Feeder!🍈🍅🍆🥑</b><br> <br>Drag fruit to face to feed!<br><br>
         😐😐😐<br><br>
         Bigger fruit #s = more points.<br><br>
-        🍉🍍🍓🍑🍒🥭🍐🍏🍋<br><br>
+        🍉🍍🍓<br><br>
         Fill the happiness meter to go into a feeding frenzy!<br><br>
         🤪🤪🤪<br><br>
         Wrong way and game over!<br><br>
@@ -40,11 +40,11 @@
       document.getElementById('rulesModal').style.display = 'flex';
     }
     function closeModal() {
-      document.getElementById('rulesModal').style.display = 'none';  // Hide the modal
+      document.getElementById('rulesModal').style.display = 'none';
       resizeScreen();
-      startGameTimer()
+      startGameTimer();
+      updateScene();
       startDropping();
-      updateScene(); // Start animation loop
     }
     function startGameTimer() {
       setInterval(() => {
@@ -248,7 +248,7 @@
       }
     });
     let intervalId;
-    const startDropping = () => {
+    function startDropping() {
       if (intervalId) {
         clearInterval(intervalId);
       }
