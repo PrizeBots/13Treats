@@ -30,19 +30,45 @@
     </div>
   </div>
   <canvas id="a"></canvas>
-  <audio id="song1" src="./song2.mp3"></audio>
-  <audio id="song2" src="./song2.mp3"></audio>
+  <span id="soundToggle" onclick="toggleSound()" style="position: fixed; top: 20px; right: 20px; z-index: 2000; 
+         font-size: 48px; cursor: pointer;">🔊</span>
+
+  <audio id="song1" src="./song3.mp3"></audio>
+  <audio id="song2" src="./song3.mp3"></audio>
   <audio id="yum1" src="./yum1.mp3"></audio>
   <audio id="yum2" src="./yum2.mp3"></audio>
   <audio id="ew1" src="./ew1.mp3"></audio>
   <audio id="ew2" src="./ew2.mp3"></audio>
   <audio id="poop1" src="./poop1.mp3"></audio>
   <script>
+    const canvas = document.querySelector('#a');
+    canvas.style.userSelect = 'none';
+    canvas.style.webkitUserSelect = 'none';
+    canvas.style.mozUserSelect = 'none';
+    canvas.style.msUserSelect = 'none';
+    canvas.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+    });
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    let isSoundOn = true;
+    function toggleSound() {
+      isSoundOn = !isSoundOn;
+      const button = document.getElementById('soundToggle');
+      if (isSoundOn) {
+        button.innerHTML = '🔊';
+      } else {
+        button.innerHTML = '🔇';
+      }
+      const audios = document.querySelectorAll('audio');
+      audios.forEach(audio => {
+        audio.muted = !isSoundOn;
+      });
+    }
     const song1 = document.getElementById('song1')
     const song2 = document.getElementById('song2')
     song1.volume = 0.3;
     song2.volume = 0.3;
-    const trackDuration = 4005;
+    const trackDuration = 4110;
     let isPlayingSong1 = false;
     const yum1 = document.getElementById('yum1');
     const yum2 = document.getElementById('yum2');
@@ -97,8 +123,8 @@
     }
     window.onload = showModal;
     const c = a.getContext('2d');
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     yum1.volume = 0.5;
     yum2.volume = 0.5;
     ew1.volume = 1;
@@ -107,8 +133,8 @@
     a.width = innerWidth * .96;
     a.height = innerHeight * .96;
     window.addEventListener('resize', resizeScreen);
-    const maxPoints = 1000;
-    const minPoints = -1000;
+    const maxPoints = 500;
+    const minPoints = -500;
     let objects = [];
     let draggingEmoji = null;
     let dragOffset = { x: 0, y: 0 };
@@ -143,38 +169,113 @@
     let groundHeight = 50;
     let twelveMin = 1;
     let twelveMax = 20;
+    let drawMonsterFirst = false;
     const Vec2 = (x, y) => ({ x, y });
     const add = (v1, v2) => Vec2(v1.x + v2.x, v1.y + v2.y);
     const subtract = (v1, v2) => Vec2(v1.x - v2.x, v1.y - v2.y);
     const scale = (v, s) => Vec2(v.x * s, v.y * s);
     const length = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
     const normalize = (v) => scale(v, 1 / (length(v) || 1));
+    let happyBarHeight = 80;
+    let happyBarY = 10;
+    //Happiness
     const drawHappinessBar = () => {
-      const barHeight = 80;
-      const barMaxWidth = a.width / 1.5;
-      const barX = (a.width - barMaxWidth) / 2;
-      const barY = 10;
-      const middleX = barX + barMaxWidth / 2;
-      const barWidth = Math.min(Math.abs(happiness) / maxPoints * (barMaxWidth / 2), barMaxWidth / 2);
+      const happyBarMaxWidth = a.width / 1.5;
+      const happyBarX = (a.width - happyBarMaxWidth) / 2;
+      const middleX = happyBarX + happyBarMaxWidth / 2;
+      const happyBarWidth = Math.min(Math.abs(happiness) / maxPoints * (happyBarMaxWidth / 2), happyBarMaxWidth / 2);
       c.fillStyle = '#a0a0a0';
-      c.fillRect(barX, barY, barMaxWidth, barHeight);
+      c.fillRect(happyBarX, happyBarY, happyBarMaxWidth, happyBarHeight);
       if (happiness >= 0) {
-        c.fillStyle = '#00ff00';
-        c.fillRect(middleX, barY, barWidth, barHeight);
+        c.fillStyle = '#00ff00'; // Green
+        c.fillRect(middleX, happyBarY, happyBarWidth, happyBarHeight);
       } else {
-        c.fillStyle = '#ff0000';
-        c.fillRect(middleX - barWidth, barY, barWidth, barHeight);
+        c.fillStyle = '#ff0000'; // Red
+        c.fillRect(middleX - happyBarWidth, happyBarY, happyBarWidth, happyBarHeight);
       }
+      // Draw the middle line in the bar
       c.strokeStyle = '#000000';
       c.beginPath();
-      c.moveTo(middleX, barY);
-      c.lineTo(middleX, barY + barHeight);
+      c.moveTo(middleX, happyBarY);
+      c.lineTo(middleX, happyBarY + happyBarHeight);
       c.stroke();
-      c.strokeRect(barX, barY, barMaxWidth, barHeight);
+      c.strokeRect(happyBarX, happyBarY, happyBarMaxWidth, happyBarHeight);
+      let frenzyFillColor, dieFillColor;
+      if (happiness >= maxPoints) {
+        if (flashState === 1) {
+          frenzyFillColor = '#ffff00'; // Yellow
+        } else {
+          frenzyFillColor = '#00ff00'; // Green
+        }
+        dieFillColor = '#ff0000'; // Red
+        startFlashing('#00ff00', '#ffff00'); // Start flashing green and yellow
+      } else if (happiness <= 0.6 * minPoints) {
+        if (flashState === 1) {
+          dieFillColor = '#ffff00'; // Yellow
+        } else {
+          dieFillColor = '#ff0000'; // Red
+        }
+        frenzyFillColor = '#00ff00'; // Green
+        startFlashing('#ff0000', '#ffff00'); // Start flashing yellow and red
+      } else {
+        stopFlashing(); // Ensure flashing is stopped if not in the flashing range
+        frenzyFillColor = '#00ff00'; // Default green
+        dieFillColor = '#ff0000'; // Default red
+      }
+
+      // Add the green "FRENZY!" circle to the right side
+      const frenzyRadius = happyBarHeight * 0.58;
+      const frenzyX = happyBarX + happyBarMaxWidth - frenzyRadius / 2;
+      const frenzyY = happyBarY + happyBarHeight / 2;
+
+      c.beginPath();
+      c.arc(frenzyX, frenzyY, frenzyRadius, 0, Math.PI * 2); // Draw circle
+      c.fillStyle = frenzyFillColor;
+      c.fill();
+      c.strokeStyle = '#000000'; // Black stroke
+      c.lineWidth = 2; // Set stroke width
+      c.stroke(); // Apply stroke to the circle
+      c.fillStyle = '#000000'; // Black text color
+      const circleFontSize = frenzyRadius * .4;
+      c.font = `bold ${circleFontSize}px Arial`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('FRENZY!', frenzyX, frenzyY); // Draw text inside the circle
+
+      const dieRadius = happyBarHeight * .58;
+      const dieX = happyBarX + dieRadius / 2;
+      const dieY = happyBarY + happyBarHeight / 2;
+      c.beginPath();
+      c.arc(dieX, dieY, dieRadius, 0, Math.PI * 2); // Draw circle
+      c.fillStyle = dieFillColor;
+      c.fill();
+      c.strokeStyle = '#000000'; // Black stroke
+      c.lineWidth = 2; // Set stroke width
+      c.stroke(); // Apply stroke to the circle
+      c.fillStyle = '#000000'; // Black text color
+      c.font = `bold ${circleFontSize}px Arial`;
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('DIE!', dieX, dieY); // Draw text inside the circle
+      // Trigger game over if happiness goes below the minimum points
       if (happiness <= minPoints) {
         gameOver();
       }
     };
+    const stopFlashing = () => {
+      clearInterval(flashInterval);
+      flashState = 0;
+    };
+    let flashState = 0; 
+    let flashInterval;
+    const startFlashing = (color1, color2) => {
+      let isColor1 = true;
+      flashInterval = setInterval(() => {
+        flashState = isColor1 ? 1 : 0;
+        isColor1 = !isColor1;
+      }, 500); 
+    };
+
     const gameOver = () => {
       alert(`Game Over! You Reached Level ${level} with ${points} points!`);
       happiness = 0;
@@ -219,7 +320,7 @@
       this.x = startX;
       this.y = startY;
       this.circles = circles;
-      this.speed = Math.random() * 1 + 0.25;
+      this.speed = Math.random() * .1 + .25;
       this.width = circles.reduce((acc, circle) => acc + circle.radius * 2, 0);
     }
     function cloudSpawner() {
@@ -238,7 +339,7 @@
       }
     }
     function generateCloudCircles() {
-      const circleCount = Math.floor(Math.random() * 5) + 9;
+      const circleCount = Math.floor(Math.random() * 4) + 7;
       let circles = [];
       let lastX = 0;
       let rootY = Math.random() * (a.height);
@@ -337,11 +438,28 @@
           D: 0,
           R: 30,
           Z: '💩',
+          clicks: 13,
+          clickCounter: 13,
+          maxClicks: 13,
+          isDragging: false,
+          isPoop: true,
+          active: true,
+        });
+      }
+      if (event.key === 'l') {
+        objects.push({
+          C: (Vec2(Math.random() * (a.width - 100) + 50, -50)),
+          V: Vec2(0, 0),
+          M: 1 / 30,
+          B: 0,
+          D: 0,
+          R: 30,
+          Z: '🍎',
           clicks: 0,
           clickCounter: 0,
           maxClicks: 13,
           isDragging: false,
-          isPoop: true,
+          isPoop: false,
           active: true,
         });
       }
@@ -352,6 +470,9 @@
         else {
           frenzy = true;
         }
+      }
+      if (event.key === 'k') {
+        happiness += 80;
       }
     });
     let intervalId;
@@ -402,6 +523,7 @@
         if (dist < obj.R && obj.active) {
           if (obj.isPoop) {
             killPoop(obj);
+            happiness += 5;
             poop1.play();
             obj.active = false;
             return;
@@ -470,6 +592,7 @@
         happiness -= poopPoints;
         monster.face = yuck[Math.floor(Math.random() * yuck.length)];
         yuckSounds[Math.floor(Math.random() * yuckSounds.length)].play();
+        drawMonsterFirst = true;
       } else {
         isEating = true;
         happiness += b.clicks;
@@ -479,8 +602,10 @@
       }
       objects = objects.filter((obj) => obj !== b);
       setTimeout(() => {
+        drawMonsterFirst = false;
         monster.face = monster.currentFace;
         isEating = false;
+
       }, 500);
     }
     let barPos = Vec2((a.width - barWidth) / 2, a.height / 2);
@@ -505,17 +630,18 @@
         barHeight = 10;
         monsterSize = a.width * 0.2;
         monsterY = a.height - a.height * .4;
-        fruitSize = 10;
+        fruitSize = 12;
         barPosY = monsterY * .96;
         barSpeed = 1;
         speed = 1;
         groundHeight = 30;
       } else if (isLandscape) {
-        a.width = window.innerWidth * .98;
-        a.height = window.innerHeight * .95;
+        a.width = window.innerWidth * .99;
+        a.height = window.innerHeight * .98;
+        happyBarHeight = 50;
         barHeight = 20;
         monsterY = a.height * .5;
-        monsterSize = a.width / 5;
+        monsterSize = a.width / 6;
         fruitSize = 15;
         barPosY = monsterY * .75;
         barSpeed = 2;
@@ -559,7 +685,7 @@
       objects.forEach((b, i) => {
         if (!b.isDragging && b.M) {
           if (!b.isPoop) {
-            b.clickCounter += growthRate;
+            b.clickCounter += growthRate * Math.random() * 0.001 + 0.008;;
             const roundIt = Math.round(b.clickCounter);
             if (roundIt >= 1) {
               b.clicks++;
