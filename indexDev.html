@@ -32,9 +32,7 @@
   <canvas id="a"></canvas>
   <span id="soundToggle" onclick="toggleSound()" style="position: fixed; top: 20px; right: 20px; z-index: 2000; 
          font-size: 48px; cursor: pointer;">🔊</span>
-
   <audio id="song1" src="./song3.mp3"></audio>
-  <audio id="song2" src="./song3.mp3"></audio>
   <audio id="yum1" src="./yum1.mp3"></audio>
   <audio id="yum2" src="./yum2.mp3"></audio>
   <audio id="ew1" src="./ew1.mp3"></audio>
@@ -65,47 +63,21 @@
       });
     }
     const song1 = document.getElementById('song1')
-    const song2 = document.getElementById('song2')
-    song1.volume = 0.3;
-    song2.volume = 0.3;
+    song1.volume = 0.5;
     const trackDuration = 4110;
     let isPlayingSong1 = false;
     const yum1 = document.getElementById('yum1');
     const yum2 = document.getElementById('yum2');
     const ew1 = document.getElementById('ew1');
     const ew2 = document.getElementById('ew2');
-    function playSeamlessLoop() {
-      if (isPlayingSong1) {
-        song1.currentTime = 0;
-        song1.play();
-        setTimeout(() => {
-          song2.currentTime = 0;
-          song2.play();
-          isPlayingSong1 = false;
-        }, trackDuration);
-      } else {
-        song2.currentTime = 0;
-        song2.play();
-        setTimeout(() => {
-          song1.currentTime = 0;
-          song1.play();
-          isPlayingSong1 = true;
-        }, trackDuration);
-      }
-    }
-    function startSeamlessLoop() {
-      song1.currentTime = 0;
-      song1.play();
-      isPlayingSong1 = true;
-      setInterval(playSeamlessLoop, trackDuration);
-    }
     function closeModal() {
       document.getElementById('rulesModal').style.display = 'none';
       resizeScreen();
       startGameTimer();
       updateScene();
       startDropping();
-      startSeamlessLoop();
+      song1.loop= true;
+      song1.play();
     }
     window.onload = showModal;
     function showModal() {
